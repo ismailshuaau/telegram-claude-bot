@@ -252,20 +252,27 @@ telegram-claude-bot/
 
 ---
 
-## 🚀 Deploy to AWS (Optional)
+## 🚀 Deploy to AWS (For 24/7 Access)
 
-Once local testing works, deploy to EC2 for 24/7 access:
+Once local testing works, deploy to EC2 for 24/7 access from anywhere!
 
-```bash
-# On EC2:
-1. Install Claude Code CLI
-2. Login: claude-code login
-3. Set environment variables
-4. Run: python3 telegram_proxy.py
+**📖 Complete Deployment Guide:** [AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md)
 
-# Or use systemd for auto-restart
-# See DEPLOY_TO_AWS.md (coming soon!)
-```
+**Quick Overview:**
+- **Region:** Singapore (ap-southeast-1) - optimized for Vietnam
+- **Instance:** t3a.xlarge (4 vCPU, 16GB RAM) - ~$54/month
+- **Mobile Access:** Full Termius guide included ([TERMIUS_GUIDE.md](TERMIUS_GUIDE.md))
+- **Security:** Tailscale setup for secure access
+- **Setup Time:** ~1.5-2 hours
+
+**What you get:**
+- ✅ 24/7 bot access from Telegram
+- ✅ SSH access from Android (Termius)
+- ✅ Auto-restart on failure (systemd)
+- ✅ Low latency from Vietnam (~50-100ms)
+- ✅ Complete setup automation
+
+**Start here:** [AWS_DEPLOYMENT.md](AWS_DEPLOYMENT.md)
 
 ---
 
