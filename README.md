@@ -348,11 +348,11 @@ Bot: [Creates migration, new model, updates references]
 
 ### Q: Does this work with voice messages?
 
-**A:** Yes!
-- Record voice message in Telegram
-- Telegram transcribes it automatically
-- Bot receives transcription
-- Works like text message
+**A:** Yes! Use Telegram's voice-to-text feature:
+- Hold the mic button 🎤
+- Swipe up ⬆️ (this converts voice to text)
+- Release and send
+- Bot receives it as text message and responds normally
 
 ### Q: Can multiple people use the same bot?
 
@@ -416,7 +416,7 @@ Bot: [Creates migration, new model, updates references]
 
 **Tip 3: Voice messages**
 - Faster than typing on phone
-- Telegram transcribes automatically
+- Hold mic button and swipe up to convert to text
 - Just speak naturally
 
 **Tip 4: Long conversations**
