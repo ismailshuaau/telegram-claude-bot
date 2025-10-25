@@ -1,15 +1,15 @@
 #!/bin/bash
 #
 # EC2 Setup Script for Telegram Claude Code Bot
-# Optimized for m6i.2xlarge (8 vCPU, 32GB RAM)
-#
-# Usage: curl -fsSL <script-url> | bash
-# Or: bash setup-ec2.sh
+# Run this on a fresh Ubuntu 24.04 EC2 instance
 #
 
-set -e
+set -e  # Exit on error
 
-echo "🚀 Setting up EC2 instance for Telegram Claude Code Bot..."
+echo "========================================"
+echo "🚀 EC2 Setup for Telegram Claude Bot"
+echo "========================================"
+echo ""
 
 # Colors for output
 RED='\033[0;31m'
@@ -17,245 +17,137 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-log_info() {
-    echo -e "${GREEN}✓${NC} $1"
+# Helper functions
+print_status() {
+    echo -e "${GREEN}✅ $1${NC}"
 }
 
-log_warn() {
-    echo -e "${YELLOW}⚠${NC} $1"
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
 }
 
-log_error() {
-    echo -e "${RED}✗${NC} $1"
+print_info() {
+    echo -e "${YELLOW}ℹ️  $1${NC}"
 }
 
-# Check if running as root
-if [ "$EUID" -eq 0 ]; then
-    log_warn "Running as root. Some operations will adjust permissions for ubuntu user."
-    USER_HOME="/home/ubuntu"
-    RUN_USER="ubuntu"
-else
-    USER_HOME="$HOME"
-    RUN_USER="$(whoami)"
+# Check if running on Ubuntu
+if [ ! -f /etc/os-release ]; then
+    print_error "Cannot detect OS. This script is for Ubuntu 24.04"
+    exit 1
 fi
+
+. /etc/os-release
+if [ "$ID" != "ubuntu" ]; then
+    print_error "This script is for Ubuntu only. Detected: $ID"
+    exit 1
+fi
+
+print_status "Detected Ubuntu $VERSION"
 
 # Update system
-log_info "Updating system packages..."
-sudo apt-get update
-sudo apt-get upgrade -y
+print_info "Updating system packages..."
+sudo apt update && sudo apt upgrade -y
+print_status "System updated"
 
-# Install essential packages
-log_info "Installing essential packages..."
-sudo apt-get install -y \
-    git \
-    curl \
-    wget \
-    vim \
-    tmux \
-    htop \
-    iotop \
-    nethogs \
-    build-essential \
-    libssl-dev \
-    libffi-dev \
-    python3.11 \
-    python3.11-venv \
-    python3-pip \
-    postgresql-client \
-    redis-tools \
-    ffmpeg \
-    jq \
-    unzip
-
-# Install Node.js 18 LTS
-log_info "Installing Node.js 18..."
-if ! command -v node &> /dev/null; then
-    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+# Install Node.js 20.x
+print_info "Installing Node.js 20.x..."
+if command -v node &> /dev/null; then
+    print_info "Node.js already installed: $(node --version)"
+else
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt install -y nodejs
+    print_status "Node.js installed: $(node --version)"
 fi
 
-node_version=$(node --version)
-log_info "Node.js installed: $node_version"
+# Verify npm
+if command -v npm &> /dev/null; then
+    print_status "npm installed: $(npm --version)"
+else
+    print_error "npm not found after Node.js installation"
+    exit 1
+fi
+
+# Install Python 3.12 (should be pre-installed on Ubuntu 24.04)
+print_info "Checking Python installation..."
+if command -v python3 &> /dev/null; then
+    PYTHON_VERSION=$(python3 --version | cut -d' ' -f2)
+    print_status "Python3 installed: $PYTHON_VERSION"
+else
+    print_error "Python3 not found"
+    exit 1
+fi
+
+# Install pip
+print_info "Installing pip..."
+sudo apt install -y python3-pip python3-venv
+print_status "pip installed"
+
+# Install Git
+print_info "Installing Git..."
+if command -v git &> /dev/null; then
+    print_info "Git already installed: $(git --version)"
+else
+    sudo apt install -y git
+    print_status "Git installed: $(git --version)"
+fi
+
+# Install useful tools
+print_info "Installing useful tools..."
+sudo apt install -y htop tmux curl wget unzip
+print_status "Tools installed (htop, tmux, curl, wget, unzip)"
 
 # Install Claude Code CLI
-log_info "Installing Claude Code CLI..."
-if ! command -v claude-code &> /dev/null; then
+print_info "Installing Claude Code CLI..."
+if command -v claude &> /dev/null; then
+    print_info "Claude Code already installed: $(claude --version)"
+elif command -v claude-code &> /dev/null; then
+    print_info "Claude Code already installed: $(claude-code --version)"
+else
     sudo npm install -g @anthropic-ai/claude-code
+    if command -v claude &> /dev/null; then
+        print_status "Claude Code installed: $(claude --version)"
+    elif command -v claude-code &> /dev/null; then
+        print_status "Claude Code installed: $(claude-code --version)"
+    else
+        print_error "Claude Code installation failed"
+        exit 1
+    fi
 fi
 
-claude_version=$(claude-code --version 2>&1 || echo "installed")
-log_info "Claude Code installed: $claude_version"
+# Create projects directory
+print_info "Creating projects directory..."
+mkdir -p ~/projects
+print_status "Created ~/projects"
 
-# Install AWS CLI v2
-log_info "Installing AWS CLI v2..."
-if ! command -v aws &> /dev/null; then
-    cd /tmp
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-    unzip -q awscliv2.zip
-    sudo ./aws/install
-    rm -rf awscliv2.zip aws
-fi
-
-aws_version=$(aws --version)
-log_info "AWS CLI installed: $aws_version"
-
-# Configure swap (16GB for 32GB RAM instance)
-log_info "Configuring swap space..."
-if [ ! -f /swapfile ]; then
-    sudo dd if=/dev/zero of=/swapfile bs=1G count=16 status=progress
-    sudo chmod 600 /swapfile
-    sudo mkswap /swapfile
-    sudo swapon /swapfile
-    echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-    log_info "16GB swap configured"
-else
-    log_warn "Swap already configured"
-fi
-
-# Kernel optimizations
-log_info "Applying kernel optimizations..."
-sudo tee -a /etc/sysctl.conf > /dev/null <<EOF
-
-# Telegram Claude Bot optimizations
-fs.file-max = 2097152
-fs.nr_open = 2097152
-net.core.rmem_max = 134217728
-net.core.wmem_max = 134217728
-net.ipv4.tcp_rmem = 4096 87380 67108864
-net.ipv4.tcp_wmem = 4096 65536 67108864
-net.core.somaxconn = 4096
-net.ipv4.tcp_max_syn_backlog = 8192
-EOF
-
-sudo sysctl -p > /dev/null
-
-# Increase ulimits
-log_info "Increasing file descriptor limits..."
-sudo tee -a /etc/security/limits.conf > /dev/null <<EOF
-$RUN_USER soft nofile 65536
-$RUN_USER hard nofile 65536
-$RUN_USER soft nproc 32768
-$RUN_USER hard nproc 32768
-EOF
-
-# Setup Python virtual environment
-log_info "Setting up Python environment..."
-cd $USER_HOME
-if [ ! -d "telegram-claude-bot" ]; then
-    mkdir -p telegram-claude-bot
-fi
-
-cd telegram-claude-bot
-
-if [ ! -d "venv" ]; then
-    python3.11 -m venv venv
-fi
-
-source venv/bin/activate
-
-# Install Python dependencies
-log_info "Installing Python dependencies..."
-pip install --upgrade pip
-
-cat > requirements.txt <<EOF
-python-telegram-bot[job-queue]==20.7
-anthropic==0.18.1
-asyncio==3.4.3
-aiofiles==23.2.1
-python-dotenv==1.0.0
-EOF
-
-pip install -r requirements.txt
-
-# Create directory structure
-log_info "Creating directory structure..."
-mkdir -p logs
-mkdir -p config
-mkdir -p systemd
-
-# Create .env template
-log_info "Creating .env template..."
-cat > .env.template <<EOF
-# Telegram Bot Configuration
-TELEGRAM_BOT_TOKEN=your-bot-token-here
-ALLOWED_USER_IDS=123456789,987654321
-
-# Claude API
-ANTHROPIC_API_KEY=your-anthropic-key-here
-
-# OpenAI (optional, for Whisper if not using Telegram transcription)
-# OPENAI_API_KEY=your-openai-key-here
-
-# Project Paths
-PROJECT_ROOT=/home/ubuntu/project
-BACKEND_PATH=/home/ubuntu/project/transcription-platform
-FRONTEND_PATH=/home/ubuntu/project/expo-voice-analytics-mobile-app
-
-# Bot Settings
-CLAUDE_MODEL=claude-sonnet-4-5-20250929
-MAX_REQUESTS_PER_MINUTE=10
-SESSION_TIMEOUT=3600
-LOG_LEVEL=INFO
-
-# Features
-ENABLE_NOTIFICATIONS=true
-NOTIFY_ON_ERROR=true
-NOTIFY_ON_COMPLETION=true
-EOF
-
-log_info ".env.template created. Copy to .env and configure!"
-
-# Install Tailscale (optional but recommended for security)
-log_info "Installing Tailscale (optional)..."
-if ! command -v tailscale &> /dev/null; then
-    curl -fsSL https://tailscale.com/install.sh | sh
-    log_info "Tailscale installed. Run 'sudo tailscale up' to connect"
-else
-    log_warn "Tailscale already installed"
-fi
-
-# Configure tmux for mobile coding
-log_info "Configuring tmux..."
-cat > $USER_HOME/.tmux.conf <<EOF
-# Tmux configuration for mobile coding
-set -g mouse on
-set -g history-limit 100000
-set -g prefix C-a
-unbind C-b
-bind C-a send-prefix
-set -g status-position top
-set -g status-style bg=colour235,fg=colour136
-set -g pane-border-style fg=colour235
-set -g pane-active-border-style fg=colour136
-set -g display-panes-time 3000
-
-# Quick pane switching
-bind -n M-Left select-pane -L
-bind -n M-Right select-pane -R
-bind -n M-Up select-pane -U
-bind -n M-Down select-pane -D
-EOF
-
-# Create log directory
-sudo mkdir -p /var/log/telegram-claude-bot
-sudo chown $RUN_USER:$RUN_USER /var/log/telegram-claude-bot
-
-# Set correct ownership
-if [ "$EUID" -eq 0 ]; then
-    chown -R ubuntu:ubuntu $USER_HOME/telegram-claude-bot
-fi
-
-log_info "✅ EC2 setup complete!"
 echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "========================================"
+echo "✅ EC2 Setup Complete!"
+echo "========================================"
+echo ""
 echo "Next steps:"
-echo "1. Clone your project to /home/ubuntu/project"
-echo "2. Copy bot files to /home/ubuntu/telegram-claude-bot/"
-echo "3. Configure .env with your tokens"
-echo "4. Setup systemd service (see systemd/telegram-claude-bot.service)"
-echo "5. Start the bot!"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-echo "To get your Telegram user ID, message @userinfobot"
-echo "To get bot token, message @BotFather"
+echo "1. Login to Claude Code:"
+echo "   claude login"
+echo ""
+echo "2. Set up GitHub SSH access:"
+echo "   ssh-keygen -t ed25519 -C \"your-email@example.com\""
+echo "   cat ~/.ssh/id_ed25519.pub"
+echo "   # Add the public key to GitHub: https://github.com/settings/keys"
+echo ""
+echo "3. Clone your projects:"
+echo "   cd ~/projects"
+echo "   git clone git@github.com:YOUR_ORG/YOUR_PROJECT.git"
+echo "   git clone git@github.com:ismailshuaau/telegram-claude-bot.git"
+echo ""
+echo "4. Deploy the bot:"
+echo "   cd ~/projects/telegram-claude-bot"
+echo "   pip3 install python-telegram-bot"
+echo "   # Configure .env file"
+echo "   # Set up systemd service"
+echo ""
+echo "5. (Optional) Install Tailscale:"
+echo "   curl -fsSL https://tailscale.com/install.sh | sh"
+echo "   sudo tailscale up"
+echo ""
+echo "📚 See AWS_DEPLOYMENT.md for full deployment guide"
 echo ""
