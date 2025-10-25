@@ -1,0 +1,40 @@
+[Unit]
+Description=Telegram Claude Code Bot - Vibe Coding Interface
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/telegram-claude-bot
+
+# Load environment variables from .env file
+EnvironmentFile=/home/ubuntu/telegram-claude-bot/.env
+
+# Python virtual environment
+ExecStart=/home/ubuntu/telegram-claude-bot/venv/bin/python /home/ubuntu/telegram-claude-bot/bot.py
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=0
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/ubuntu/telegram-claude-bot/logs /var/log/telegram-claude-bot /home/ubuntu/project
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=32768
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=telegram-claude-bot
+
+[Install]
+WantedBy=multi-user.target

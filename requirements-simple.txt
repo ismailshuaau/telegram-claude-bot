@@ -1,0 +1,4 @@
+# Simple Telegram Claude Proxy Requirements
+# For the pure proxy version (telegram_proxy.py)
+
+python-telegram-bot==20.7
