@@ -24,7 +24,7 @@ You receive it on your phone
 
 **NO restrictions, NO special logic, NO limitations!**
 
-Just like chatting with Claude Code directly, but via Telegram instead of a desktop app.
+Just like chatting with Claude Code CLI directly, but via Telegram instead of your terminal.
 
 ---
 
@@ -325,18 +325,18 @@ Bot: [Creates migration, new model, updates references]
 
 ### Q: Is this safe?
 
-**A:** It's as safe as Claude Code on your desktop:
+**A:** It's as safe as running Claude Code CLI locally:
 - Only authorized Telegram users can access (ALLOWED_USER_IDS)
 - Claude Code runs with your user permissions
-- Same access as running Claude Code locally
+- Same access as running Claude Code in your terminal
 - Review changes before committing to git
 
 ### Q: Will my code be sent to Anthropic?
 
-**A:** Same as Claude Code:
+**A:** Same as Claude Code CLI:
 - Yes, code is sent to Claude API for analysis
 - Covered by Anthropic's privacy policy
-- No different than using Claude Code desktop app
+- No different than using Claude Code in your terminal
 
 ### Q: Can I use this for multiple projects?
 
