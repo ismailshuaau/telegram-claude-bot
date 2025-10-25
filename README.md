@@ -48,7 +48,6 @@ Just like chatting with Claude Code directly, but via Telegram instead of a desk
 
 ✅ **Works Anywhere**
 - Code from your phone
-- Send voice messages
 - Get instant responses
 - Persistent sessions
 
@@ -346,14 +345,6 @@ Bot: [Creates migration, new model, updates references]
 - Or tell Claude to change directory in conversation
 - "Claude, let's work on my other project at /path/to/other"
 
-### Q: Does this work with voice messages?
-
-**A:** Yes! Use Telegram's voice-to-text feature:
-- Hold the mic button 🎤
-- Swipe up ⬆️ (this converts voice to text)
-- Release and send
-- Bot receives it as text message and responds normally
-
 ### Q: Can multiple people use the same bot?
 
 **A:** Current version: One shared session
@@ -414,12 +405,7 @@ Bot: [Creates migration, new model, updates references]
 - Add real features on the go
 - True mobile development
 
-**Tip 3: Voice messages**
-- Faster than typing on phone
-- Hold mic button and swipe up to convert to text
-- Just speak naturally
-
-**Tip 4: Long conversations**
+**Tip 3: Long conversations**
 - Context carries across messages
 - Refer to previous responses
 - Natural back-and-forth

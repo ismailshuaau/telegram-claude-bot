@@ -287,29 +287,6 @@ Just chat naturally! Examples:
             for chunk in chunks:
                 await update.message.reply_text(chunk)
 
-    async def handle_voice(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle voice messages (uses Telegram's transcription feature)"""
-
-        # Check authorization
-        if ALLOWED_USER_IDS and update.effective_user.id not in ALLOWED_USER_IDS:
-            await update.message.reply_text(
-                f"❌ Unauthorized. Your ID: {update.effective_user.id}"
-            )
-            return
-
-        # In Telegram, voice messages need to be transcribed
-        # The easiest way: User should hold mic button and swipe up to convert to text
-        # That sends it as a TEXT message (already handled)
-
-        # If we receive raw voice, we don't have transcription built-in
-        await update.message.reply_text(
-            "🎤 **Voice message received!**\n\n"
-            "**How to use voice with this bot:**\n"
-            "Hold the mic button 🎤 and swipe up ⬆️ before releasing\n"
-            "This converts your voice to text automatically!\n\n"
-            "Then just send it as text and I'll respond 😊"
-        )
-
     async def error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE):
         """Handle errors"""
         logger.error(f"Exception: {context.error}", exc_info=context.error)
@@ -354,7 +331,6 @@ Just chat naturally! Examples:
         self.app.add_handler(CommandHandler("start", self.cmd_start))
         self.app.add_handler(CommandHandler("help", self.cmd_help))
         self.app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
-        self.app.add_handler(MessageHandler(filters.VOICE, self.handle_voice))
 
         # Error handler
         self.app.add_error_handler(self.error_handler)
