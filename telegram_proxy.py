@@ -112,7 +112,7 @@ class ClaudeCodeSession:
             try:
                 stdout, stderr = await asyncio.wait_for(
                     process.communicate(),
-                    timeout=300  # 5 minutes max
+                    timeout=600  # 10 minutes max
                 )
 
                 # Decode outputs
@@ -138,7 +138,7 @@ class ClaudeCodeSession:
             except asyncio.TimeoutError:
                 process.kill()
                 await process.wait()
-                return "❌ Response timeout (>5 minutes)"
+                return "❌ Response timeout (>10 minutes)"
 
         except Exception as e:
             logger.error(f"Error communicating with Claude Code: {e}")
