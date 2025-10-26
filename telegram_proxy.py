@@ -77,6 +77,94 @@ class ClaudeCodeSession:
         logger.info(f"✅ Claude Code ready")
         return True
 
+    def _get_agent_aware_prompt(self, user_message: str) -> str:
+        """
+        Enhance user message with intelligent agent system awareness
+
+        Makes Claude aware of:
+        - Agent learnings (discovered patterns, solutions)
+        - Agent context (recent actions, errors)
+        - Agent handoffs (pending work)
+        - Agent metrics (performance tracking)
+        """
+
+        # Path to ChefVision agent system
+        agents_path = f"{self.project_dir}/.claude/agents"
+
+        # Check if agent system exists
+        if not os.path.exists(agents_path):
+            # No agent system, return original message
+            return user_message
+
+        agent_system_context = f"""
+**INTELLIGENT AGENT SYSTEM AVAILABLE**
+
+You have access to an intelligent agent system at: {agents_path}
+
+**Agent Learnings**: `{agents_path}/learnings/<agent>.md`
+- Documented solutions to past problems
+- Discovered patterns and best practices
+- Examples:
+  • aws-infrastructure-specialist.md - Deployment patterns, infrastructure solutions
+  • database-specialist.md - Schema patterns, migration strategies
+  • test-automation-specialist.md - Testing patterns, coverage strategies
+
+**Agent Context**: `{agents_path}/context/<agent>_*.json`
+- recent_actions.json - Last 10 actions taken by each agent
+- learned_patterns.json - Recurring patterns discovered through use
+- error_resolutions.json - How specific errors were resolved
+
+**Agent Handoffs**: `{agents_path}/shared/handoffs.json`
+- Pending work delegated between agents
+- You can create handoffs when work needs another specialist
+
+**Agent Metrics**: `{agents_path}/metrics/`
+- Performance tracking across all agents
+- Success rates, completion times, collaboration patterns
+
+**HOW TO USE THE AGENT SYSTEM**:
+
+1. **Before acting, check relevant agent learnings**:
+   - Deploying to AWS? → Read learnings/aws-infrastructure-specialist.md
+   - Running tests? → Read learnings/test-automation-specialist.md
+   - Database work? → Read learnings/database-specialist.md
+   - Check context/<agent>_error_resolutions.json for known issues
+
+2. **Apply learned patterns proactively**:
+   - Use discovered solutions instead of trial-and-error
+   - Reference past resolutions from error_resolutions.json
+   - Apply best practices from learned_patterns.json
+
+3. **After significant work, update agent context**:
+   - Add to context/<agent>_recent_actions.json
+   - Document new patterns in learnings/<agent>.md
+   - Create handoffs in shared/handoffs.json if delegating work
+
+**EXAMPLE WORKFLOW**:
+
+User asks: "deploy to staging"
+
+Your intelligent process:
+1. Read: {agents_path}/learnings/aws-infrastructure-specialist.md
+2. Check for deployment patterns (memory limits, known errors, optimizations)
+3. Read: {agents_path}/context/aws-infrastructure-specialist_error_resolutions.json
+4. Apply learned optimizations (e.g., use 1024MB for staging due to migrations)
+5. Execute deployment
+6. Update: {agents_path}/context/aws-infrastructure-specialist_recent_actions.json
+
+Just naturally read/write these files as part of your workflow!
+
+**LIST AVAILABLE LEARNINGS**:
+
+To see what agents have learned, check: {agents_path}/learnings/
+
+---
+
+**User's actual request**: {user_message}
+"""
+
+        return agent_system_context
+
     async def send_message(self, message: str) -> str:
         """Send message to Claude Code and get response (optimized)"""
 
@@ -89,6 +177,9 @@ class ClaudeCodeSession:
         try:
             self.message_counter += 1
 
+            # Enhance message with agent system awareness
+            enhanced_message = self._get_agent_aware_prompt(message)
+
             # Use --print --continue for context persistence
             # Use --verbose to get full output
             cmd = [
@@ -96,7 +187,7 @@ class ClaudeCodeSession:
                 '--print',
                 '--continue',
                 '--verbose',
-                message
+                enhanced_message
             ]
 
             # Run Claude Code command
@@ -303,6 +394,15 @@ Just chat naturally! Examples:
         print("="*60)
         print(f"📁 Project: {PROJECT_DIR}")
         print(f"👥 Allowed users: {ALLOWED_USER_IDS}")
+
+        # Check for agent system
+        agents_path = f"{PROJECT_DIR}/.claude/agents"
+        if os.path.exists(agents_path):
+            print(f"🧠 Agent system detected: {agents_path}")
+            print("✨ Intelligent agent awareness ENABLED")
+        else:
+            print("ℹ️  Agent system not found (running in standard mode)")
+
         print("="*60)
         print("📱 Waiting for messages from Telegram...")
         print("="*60 + "\n")
